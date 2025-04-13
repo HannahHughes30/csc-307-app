@@ -41,7 +41,6 @@ function MyApp() {
     deleteUser(id)
       .then((response) => {
         if (response.status === 204) {
-          // Only update the UI if the delete was successful
           const updated = characters.filter((character, i) => {
             return i !== index;
           });
@@ -59,13 +58,11 @@ function MyApp() {
     postUser(person)
       .then((response) => {
         if (response.status === 201) {
-          // Parse the response to get the user with ID
           return response.json();
         }
         throw new Error("Failed to add character");
       })
       .then((newUser) => {
-        // Update characters with the new user that includes the ID
         setCharacters([...characters, newUser]);
       })
       .catch((error) => {

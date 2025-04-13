@@ -53,21 +53,17 @@ const findUserByNameAndJob = (name, job) => {
 const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
-// Generate a unique ID
 function generateId() {
   return Math.random().toString(36).substring(2, 15) + 
          Math.random().toString(36).substring(2, 15);
 }
 
-// Update to return the user with ID
 const addUser = (user) => {
-  // Add an ID to the user object
   const userWithId = { ...user, id: generateId() };
   users["users_list"].push(userWithId);
   return userWithId;
 };
 
-// Add delete function
 const deleteUserById = (id) => {
   const index = users["users_list"].findIndex((user) => user["id"] === id);
   if (index !== -1) {
@@ -86,17 +82,14 @@ app.get("/users", (req, res) => {
   const job = req.query.job;
   
   if (name !== undefined && job !== undefined) {
-    // Filter by both name and job
     let result = findUserByNameAndJob(name, job);
     result = { users_list: result };
     res.send(result);
   } else if (name !== undefined) {
-    // Filter by name only
     let result = findUserByName(name);
     result = { users_list: result };
     res.send(result);
   } else {
-    // Return all users
     res.send(users);
   }
 });
@@ -111,14 +104,12 @@ app.get("/users/:id", (req, res) => {
   }
 });
 
-// Update POST to return 201 and the created user
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
   const addedUser = addUser(userToAdd);
   res.status(201).send(addedUser);
 });
 
-// Add DELETE endpoint
 app.delete("/users/:id", (req, res) => {
   const id = req.params["id"];
   const result = deleteUserById(id);
