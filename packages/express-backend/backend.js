@@ -1,127 +1,122 @@
-// backend.js
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import userServices from "./services/user-services.js";
 
 const app = express();
 const port = 8000;
 
+// Connect to MongoDB
+mongoose.connect("mongodb://localhost:27017/csc307", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("Connected to MongoDB");
+})
+.catch((err) => {
+  console.error("Error connecting to MongoDB:", err);
+});
+
 app.use(cors());
 app.use(express.json());
 
-const users = {
-  users_list: [
-    {
-      id: "xyz789",
-      name: "Charlie",
-      job: "Janitor"
-    },
-    {
-      id: "abc123",
-      name: "Mac",
-      job: "Bouncer"
-    },
-    {
-      id: "ppp222",
-      name: "Mac",
-      job: "Professor"
-    },
-    {
-      id: "yat999",
-      name: "Dee",
-      job: "Aspring actress"
-    },
-    {
-      id: "zap555",
-      name: "Dennis",
-      job: "Bartender"
-    }
-  ]
-};
-
-const findUserByName = (name) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name
-  );
-};
-
-const findUserByNameAndJob = (name, job) => {
-  return users["users_list"].filter(
-    (user) => user["name"] === name && user["job"] === job
-  );
-};
-
-const findUserById = (id) =>
-  users["users_list"].find((user) => user["id"] === id);
-
-function generateId() {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
-}
-
-const addUser = (user) => {
-  const userWithId = { ...user, id: generateId() };
-  users["users_list"].push(userWithId);
-  return userWithId;
-};
-
-const deleteUserById = (id) => {
-  const index = users["users_list"].findIndex((user) => user["id"] === id);
-  if (index !== -1) {
-    users["users_list"].splice(index, 1);
-    return true;
-  }
-  return false;
-};
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
-});
-
+// GET all users or filter by name, job, or both
 app.get("/users", (req, res) => {
   const name = req.query.name;
   const job = req.query.job;
-  
-  if (name !== undefined && job !== undefined) {
-    let result = findUserByNameAndJob(name, job);
-    result = { users_list: result };
-    res.send(result);
-  } else if (name !== undefined) {
-    let result = findUserByName(name);
-    result = { users_list: result };
-    res.send(result);
+
+  if (name && job) {
+    // Handle filtering by both name and job (assignment task)
+    userServices.findUserByNameAndJob(name, job)
+      .then((users) => {
+        res.status(200).send(users);
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send("An error occurred in the server.");
+      });
+  } else if (name) {
+    // Handle filtering by name
+    userServices.findUserByName(name)
+      .then((users) => {
+        res.status(200).send(users);
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send("An error occurred in the server.");
+      });
+  } else if (job) {
+    // Handle filtering by job
+    userServices.findUserByJob(job)
+      .then((users) => {
+        res.status(200).send(users);
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send("An error occurred in the server.");
+      });
   } else {
-    res.send(users);
+    // Handle getting all users
+    userServices.getUsers()
+      .then((users) => {
+        res.status(200).send(users);
+      })
+      .catch((error) => {
+        console.error(error);
+        res.status(500).send("An error occurred in the server.");
+      });
   }
 });
 
+// GET user by ID
 app.get("/users/:id", (req, res) => {
-  const id = req.params["id"];
-  let result = findUserById(id);
-  if (result === undefined) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.send(result);
-  }
+  const id = req.params.id;
+  userServices.findUserById(id)
+    .then((user) => {
+      if (user) {
+        res.status(200).send(user);
+      } else {
+        res.status(404).send("Resource not found.");
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("An error occurred in the server.");
+    });
 });
 
+// POST new user
 app.post("/users", (req, res) => {
-  const userToAdd = req.body;
-  const addedUser = addUser(userToAdd);
-  res.status(201).send(addedUser);
+  const user = req.body;
+  userServices.addUser(user)
+    .then((savedUser) => {
+      res.status(201).send(savedUser);
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("An error occurred in the server.");
+    });
 });
 
+// DELETE user by ID (assignment task)
 app.delete("/users/:id", (req, res) => {
-  const id = req.params["id"];
-  const result = deleteUserById(id);
-  if (result) {
-    res.status(204).send();
-  } else {
-    res.status(404).send("Resource not found.");
-  }
+  const id = req.params.id;
+  userServices.deleteUserById(id)
+    .then((deletedUser) => {
+      if (deletedUser) {
+        res.status(200).send(deletedUser);
+      } else {
+        res.status(404).send("Resource not found.");
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("An error occurred in the server.");
+    });
 });
 
+// Start the server
 app.listen(port, () => {
-  console.log(
-    `Example app listening at http://localhost:${port}`
-  );
+  console.log(`REST API is listening at http://localhost:${port}`);
 });

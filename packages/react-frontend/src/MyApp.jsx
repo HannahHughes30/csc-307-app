@@ -14,7 +14,7 @@ function MyApp() {
   useEffect(() => {
     fetchUsers()
       .then((res) => res.json())
-      .then((json) => setCharacters(json["users_list"]))
+      .then((json) => setCharacters(json)) // MongoDB returns the array directly
       .catch((error) => { console.log(error); });
   }, []);
   
@@ -36,11 +36,11 @@ function MyApp() {
   }
   
   function removeOneCharacter(index) {
-    const id = characters[index].id;
+    const id = characters[index]._id; // Changed from id to _id
     
     deleteUser(id)
       .then((response) => {
-        if (response.status === 204) {
+        if (response.status === 200) { // MongoDB returns 200 instead of 204
           const updated = characters.filter((character, i) => {
             return i !== index;
           });
